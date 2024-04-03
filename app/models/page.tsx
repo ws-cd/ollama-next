@@ -1,4 +1,4 @@
-import { listTags } from "@/components/ollama";
+import { listTags } from "@/lib/ollama";
 import { TableList } from "./components/table";
 
 export interface IModelsPageProps {}

@@ -10,15 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -27,10 +18,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { revalidatePath } from "next/cache";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { uniqBy } from "lodash-es";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().min(1),
@@ -44,6 +35,7 @@ interface Status {
 export interface IPullModalProps {}
 
 export function PullModal(props: IPullModalProps) {
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -52,13 +44,11 @@ export function PullModal(props: IPullModalProps) {
   });
 
   const [status, setStatus] = useState<Status[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       form.reset();
       setStatus([]);
-      setIsLoading(false);
     }
   }, [open, form]);
 
@@ -67,30 +57,35 @@ export function PullModal(props: IPullModalProps) {
   const onSubmit = useMemo(
     () =>
       form.handleSubmit(async (data) => {
-        setIsLoading(true);
         setStatus([]);
         try {
           const response = await fetch("/api/pull", {
             method: "POST",
             body: JSON.stringify({ ...data, stream: true }),
           });
-          if (response.body) {
+          if (response.ok) {
             const textReader = new TextDecoder();
-            for await (const chunk of response.body as any) {
-              const sts = Array.from(
-                new Set(textReader.decode(chunk).split("\n").filter(Boolean))
-              ).map((t) => JSON.parse(t));
-              setStatus((s) => uniqBy([...s, ...sts], "status"));
-              setTimeout(() => {
-                if (ref.current)
-                  ref.current.scrollTop = ref.current.scrollHeight;
-              }, 200);
+            const reader = response.body?.getReader();
+            if (reader) {
+              while (1) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const sts = Array.from(
+                  new Set(textReader.decode(value).split("\n").filter(Boolean))
+                ).map((t) => JSON.parse(t));
+                setStatus((s) => uniqBy([...s, ...sts], "status"));
+                setTimeout(() => {
+                  if (ref.current)
+                    ref.current.scrollTop = ref.current.scrollHeight;
+                }, 200);
+              }
+              await fetch("/api/revalidate", {
+                method: "POST",
+                body: JSON.stringify({ url: "/models", type: "page" }),
+              });
+              router.refresh();
             }
           }
-          await fetch("/api/revalidate", {
-            method: "POST",
-            body: JSON.stringify({ url: "/models", type: "page" }),
-          });
         } catch (error) {
           toast.toast({
             variant: "destructive",
@@ -99,8 +94,6 @@ export function PullModal(props: IPullModalProps) {
               (error as any)?.message ||
               "There was a problem with your pull request.",
           });
-        } finally {
-          setIsLoading(false);
         }
       }),
     [form]
@@ -134,8 +127,14 @@ export function PullModal(props: IPullModalProps) {
               </p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading && <Loader className="w-4 h-4 mr-1 animate-spin" />}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting && (
+              <Loader className="w-4 h-4 mr-1 animate-spin" />
+            )}
             <span>Pull</span>
           </Button>
           <div className="px-2 rounded bg-secondary text-sm" ref={ref}>
@@ -151,7 +150,7 @@ export function PullModal(props: IPullModalProps) {
             ))}
           </div>
         </form>
-        {!isLoading && (
+        {!form.formState.isSubmitting && (
           <DialogFooter>
             <Button
               type="button"

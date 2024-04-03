@@ -41,3 +41,37 @@ export async function showTag(
   });
   return await response.json();
 }
+
+export interface IPullBodyParams {
+  name: string;
+  stream: boolean;
+}
+export async function pull(body: IPullBodyParams) {
+  return request("/api/pull", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export interface IDeleteModelBodyParams {
+  name: string;
+}
+export async function deleteModel(body: IDeleteModelBodyParams) {
+  await request("/api/delete", {
+    method: "DELETE",
+    body: JSON.stringify(body),
+  });
+  return { ok: true };
+}
+
+export interface ICopyModelBodyParams {
+  source: string;
+  destination: string;
+}
+export async function copyModel(body: ICopyModelBodyParams) {
+  await request("/api/copy", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return { ok: true };
+}

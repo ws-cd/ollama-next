@@ -3,6 +3,7 @@ import { GoPackage } from "react-icons/go";
 import { PropsWithChildren } from "react";
 import { Button } from "@/components/ui/button";
 import { PullModal } from "./components/pull-modal";
+import { RefreshAction } from "./components/refresh-action";
 
 export interface IModelsLyoutProps {}
 
@@ -25,7 +26,7 @@ export default function ModelsLyout({
             <Button className="bg-green-700 hover:bg-green-600 text-white">
               Create
             </Button>
-            <Button variant="secondary">Refresh</Button>
+            <RefreshAction />
           </div>
         </div>
       </div>

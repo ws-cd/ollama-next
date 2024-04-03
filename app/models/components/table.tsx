@@ -1,5 +1,4 @@
 "use client";
-import { Model, showTag } from "@/components/ollama";
 import {
   Table,
   TableBody,
@@ -14,8 +13,9 @@ import humanFormat from "human-format";
 import { Fragment, useCallback, useState } from "react";
 import { IoIosArrowForward } from "react-icons/io";
 import { RowExpend } from "./row-expend";
-import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Model } from "@/lib/ollama";
+import { DeleteAction } from "./delete-action";
+import { CopyAction } from "./copy-action";
 
 export interface ITableListProps {
   models: Model[];
@@ -39,7 +39,7 @@ export function TableList({ models }: ITableListProps) {
           <TableHead>Digest</TableHead>
           <TableHead className="w-[120px]">Size</TableHead>
           <TableHead className="w-[200px]">Modified At</TableHead>
-          <TableHead className="w-[80px] text-center">Action</TableHead>
+          <TableHead className="w-[120px] text-center">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -62,10 +62,9 @@ export function TableList({ models }: ITableListProps) {
               <TableCell>
                 {dayjs(modified_at).format("YYYY-MM-DD HH:mm:ss")}
               </TableCell>
-              <TableCell className="flex justify-center">
-                <Button size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
+              <TableCell className="flex justify-center gap-2">
+                <CopyAction name={name} />
+                <DeleteAction name={name} />
               </TableCell>
             </TableRow>
             {expends.includes(name) && <RowExpend name={name} />}
