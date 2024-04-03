@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Theme } from "@/components/theme";
 import Image from "next/image";
 import { ReactQueryClientProvider } from "@/components/ReactQueryClientProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Ollama Next",
@@ -83,6 +84,7 @@ export default function RootLayout({
             </main>
           </ThemeProvider>
         </ReactQueryClientProvider>
+        <Toaster />
       </body>
     </html>
   );
