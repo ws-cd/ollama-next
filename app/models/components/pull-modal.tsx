@@ -17,7 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Loader } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, readStream } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
 import { uniqBy } from "lodash-es";
@@ -64,27 +64,21 @@ export function PullModal(props: IPullModalProps) {
             body: JSON.stringify({ ...data, stream: true }),
           });
           if (response.ok) {
-            const textReader = new TextDecoder();
-            const reader = response.body?.getReader();
-            if (reader) {
-              while (1) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                const sts = Array.from(
-                  new Set(textReader.decode(value).split("\n").filter(Boolean))
-                ).map((t) => JSON.parse(t));
-                setStatus((s) => uniqBy([...s, ...sts], "status"));
-                setTimeout(() => {
-                  if (ref.current)
-                    ref.current.scrollTop = ref.current.scrollHeight;
-                }, 200);
-              }
-              await fetch("/api/revalidate", {
-                method: "POST",
-                body: JSON.stringify({ url: "/models", type: "page" }),
-              });
-              router.refresh();
-            }
+            await readStream(response.body, (value) => {
+              const sts = Array.from(
+                new Set(value.split("\n").filter(Boolean))
+              ).map((t) => JSON.parse(t));
+              setStatus((s) => uniqBy([...s, ...sts], "status"));
+              setTimeout(() => {
+                if (ref.current)
+                  ref.current.scrollTop = ref.current.scrollHeight;
+              }, 200);
+            });
+            await fetch("/api/revalidate", {
+              method: "POST",
+              body: JSON.stringify({ url: "/models", type: "page" }),
+            });
+            router.refresh();
           }
         } catch (error) {
           toast.toast({

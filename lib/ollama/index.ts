@@ -75,3 +75,18 @@ export async function copyModel(body: ICopyModelBodyParams) {
   });
   return { ok: true };
 }
+
+export interface IChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+export interface IChatParams {
+  model: string;
+  messages: IChatMessage[];
+}
+export async function chat(body: IChatParams) {
+  return request("/api/chat", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
